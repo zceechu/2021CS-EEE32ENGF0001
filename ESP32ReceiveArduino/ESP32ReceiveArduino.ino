@@ -1,46 +1,79 @@
-//ESP 32 Serial read program.
-//https://www.arduino.cc/reference/en/language/functions/communication/serial/read/ Some of the program inspired from here
-//https://icircuit.net/arduino-interfacing-arduino-uno-esp32/2134 Serial transmission circuit diagram from here
+// ESP 32 Serial read program.
+// https://www.arduino.cc/reference/en/language/functions/communication/serial/read/ - Some of the program inspired from here
+// https://icircuit.net/arduino-interfacing-arduino-uno-esp32/2134 - Serial transmission circuit diagram from here
 
-#define num_bytes = 100;
-//Max number of bytes that can be sent
+#include <string.h>
 
-int incomingByte = 0; // for incoming serial data
-int count = 0;
-int printed = 0;
+#define INPUT_SIZE 10
 
-//Array that stores the data that is received from the arduino
-char dataReceived[num_bytes];
+
+// https://stackoverflow.com/questions/19206660/how-to-write-own-isnumber-function
+bool isnumber(char *s) {
+   char* e = NULL;
+   (void) strtol(s, &e, 0);
+   return e != NULL && *e == (char)0;
+}
+
+
+// Compares the input instruction and returns a corresponding int
+int encode_instr(char *arg) {
+  if (strcasecmp(arg, "READ") == 0) {
+    return 0;
+  } else if (strcasecmp(arg, "SET") == 0) {
+    return 1;
+  } else if (strcasecmp(arg, "STOP") == 0) {
+    return 2;
+  } else {
+    return -1;
+  }
+}
+
+
+void write_arduino() {
+  // Get next command from Serial (add 1 for final 0)
+  char input[INPUT_SIZE + 1];
+  byte size = Serial.readBytes(input, INPUT_SIZE);
+  
+  // Add the final 0 to end the C string
+  input[size] = 0;
+
+//  Serial.print("INPUT: ");
+//  Serial.println(input);
+
+  // Declare vars for instruction and arguments
+  int instr;
+  char *arg = strtok(input, " ");
+
+  // Iterate through input, splitting it up based on space char delimiter.
+  while (arg != 0) {
+    // If the argument is a number, don't try parsing it as an instruction
+    if (isnumber(arg)) {
+      Serial.println(arg);
+    } else {
+        // Assign the instr and check if it is valid
+        instr = encode_instr(arg);
+        if (instr >= 0) {
+          Serial.println(instr);
+        } else {
+          Serial.println("Invalid input.");
+        }
+    }
+    
+    // Continue to next argument
+    arg = strtok(0, " ");
+  }
+}
+
 
 void setup() {
   Serial.begin(9600); // opens Serial port and set baud rate to 9600
 }
 
-void loop() {
-  // If data is available from the arduino
-  while (Serial.available() > 0) 
-  {
-    //Set printed to be 0 so that the data can be printed out to the user
-    printed = 0;
-    // read the incoming byte:
-    incomingByte = Serial.read();
-    //Store the incoming byte in the dataReceived Array, convert the ascii decimal value to a char
-    dataReceived[count] = char(incomingByte);
 
-    //Increment count so that next byte is stored in next position in the array
-    count++;
-  }
-  //If the new piece of data hasn't already been printed to the user
-  if (printed== 0)
-  {
-    //iterate the array printing out the data stored
-    for(int i = 0; i < 10; i++)
-    {
-      Serial.print(dataReceived[i]);
-    }
-    //set count back to 0 so that when new data is stored, it is stored at beginning of the array
-    count = 0;
-    //printed = 1 means that the data will not be printed again, only new data is printed out to avoid spamming serial monitor
-    printed = 1;
-  }
+void loop() {
+  // Return early if there's no data on the Serial port
+  if (Serial.available() < 1) {return;}
+
+  write_arduino();
+  
 }

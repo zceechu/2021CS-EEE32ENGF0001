@@ -1,0 +1,27 @@
+int v = 0;
+int ontime = 0;
+int offtime = 0;
+int period = 0;
+int f = 0;
+
+void setup() {
+  pinMode(7,OUTPUT);
+  pinMode(A1,INPUT);
+}
+
+void loop() {
+  v = analogRead(A1);
+  if (v > 500){
+    digitalWrite(7,HIGH);
+  }
+  else{
+    digitalWrite(7,LOW);
+  }
+  ontime = pulseIn(A1,HIGH);
+  offtime = pulseIn(A1,LOW);
+  period = ontime+offtime;
+  f = 1000000/period;
+  delay(1000);
+}
+// im pretty sure this doesnt work btw just concept
+// rushed code pls fix ill look over it again tomo
